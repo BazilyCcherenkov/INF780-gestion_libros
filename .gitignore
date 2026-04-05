@@ -1,0 +1,53 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Test coverage
+coverage/
+
+# Environment variables (local secrets)
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Debug
+.node_repl_history
+
+# Optional npm cache
+.npm
+
+# ESLint cache
+.eslintcache
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Optional REPL history
+.node_repl_history
+
+# IDE - JetBrains
+.idea/
+*.iml
+
+# Misc
+*.local
+.env.example
