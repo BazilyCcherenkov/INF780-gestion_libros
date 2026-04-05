@@ -1,6 +1,6 @@
 # Gestión de Libros Leídos - API REST
 
-API REST para el seguimiento de libros leídos desarrollada con NestJS, TypeORM y PostgreSQL. Incluye documentación Swagger y pruebas unitarias/de integración con Jest.
+API REST profesional para el seguimiento de libros leídos desarrollada con NestJS, TypeORM y PostgreSQL. Incluye documentación Swagger/OpenAPI completa y pruebas unitarias/de integración con Jest.
 
 ## Proyecto Académico - INF780: Validación y Verificación de Software
 
@@ -8,32 +8,34 @@ API REST para el seguimiento de libros leídos desarrollada con NestJS, TypeORM 
 Carrera: Ingeniería Informática  
 Potosí, Bolivia - 2026
 
-## Descripción
+## Características Principales
 
-Esta API permite gestionar un catálogo de libros leídos con las siguientes funcionalidades:
-
-- CRUD completo de libros
-- Filtrado por autor, género, estado de lectura y calificación
-- Paginación de resultados
-- Estadísticas de lectura
-- Documentación automática con Swagger/OpenAPI
+- **CRUD completo** de libros con validaciones robustas
+- **Filtros avanzados**: autor, género, estado (read/unread), calificación mínima
+- **Ordenamiento**: por título, autor, año, calificación, páginas, fecha
+- **Paginación configurable** con límites personalizables
+- **Estadísticas detalladas**: totales, promedios, top rated
+- **Documentación Swagger** con ejemplos completos
+- **Filtro global de excepciones** para respuestas consistentes
+- **Pruebas unitarias** con cobertura >80% en servicio
+- **Pruebas e2e** para integración completa
 
 ## Tecnologías
 
-- **Backend**: NestJS (Node.js)
-- **ORM**: TypeORM
-- **Base de datos**: PostgreSQL
+- **Backend**: NestJS 10 (Node.js 20)
+- **ORM**: TypeORM 0.3
+- **Base de datos**: PostgreSQL 16
 - **Validación**: class-validator, class-transformer
-- **Documentación**: Swagger/OpenAPI
-- **Pruebas**: Jest
+- **Documentación**: Swagger/OpenAPI (@nestjs/swagger)
+- **Pruebas**: Jest con coverage
 
 ## Requisitos
 
 - Node.js 18+
 - PostgreSQL 14+
-- Docker (opcional, para PostgreSQL)
+- Docker (opcional)
 - npm o yarn
-- httpie (opcional, para pruebas en terminal)
+- httpie (para pruebas en terminal)
 
 ### Instalar httpie
 
@@ -50,255 +52,144 @@ pip install httpie
 
 ## Instalación
 
-### 1. Clonar el repositorio
-
 ```bash
-git clone <URL_DEL_REPOSITORIO>
+# Clonar repositorio
+git clone https://github.com/BazilyCcherenkov/INF780-gestion_libros.git
 cd gestion_libros
-```
 
-### 2. Instalar dependencias
-
-```bash
+# Instalar dependencias
 npm install
-```
 
-### 3. Configurar variables de entorno
-
-Copia el archivo de ejemplo `.env.example` a `.env`:
-
-```bash
+# Configurar variables de entorno
 cp .env.example .env
-```
+# Editar .env con credenciales de PostgreSQL
 
-O configura manualmente las variables:
-
-```env
-NODE_ENV=development
-DATABASE_HOST=localhost
-DATABASE_PORT=5432
-DATABASE_USER=gestion_user
-DATABASE_PASSWORD=tu_contraseña_segura
-DATABASE_NAME=gestion_libros
-PORT=3000
-```
-
-### 4. Iniciar PostgreSQL
-
-#### Opción A: Con Docker
-
-```bash
+# Iniciar PostgreSQL (Docker)
 docker-compose up -d
-```
 
-#### Opción B: Local
-
-Asegúrate de tener PostgreSQL instalado y ejecutándose, y crea la base de datos:
-
-```sql
-CREATE DATABASE gestion_libros;
-```
-
-## Ejecutar la Aplicación
-
-### Modo desarrollo
-
-```bash
+# Ejecutar aplicación
 npm run start:dev
-```
-
-### Modo producción
-
-```bash
-npm run build
-npm run start:prod
 ```
 
 La aplicación estará disponible en: `http://localhost:3000`
 
 ## Documentación Swagger
 
-Una vez que la aplicación esté en ejecución, accede a:
-
-- **Swagger UI**: <http://localhost:3000/api/docs>
-- **JSON OpenAPI**: <http://localhost:3000/api/docs-json>
+- **Swagger UI**: http://localhost:3000/api/docs
+- **JSON OpenAPI**: http://localhost:3000/api/docs-json
 
 ## Endpoints de la API
 
-| Método | Endpoint            | Descripción                                         |
-| ------ | ------------------- | --------------------------------------------------- |
-| POST   | `/books`            | Crear un nuevo libro                                |
-| GET    | `/books`            | Obtener todos los libros (con filtros y paginación) |
-| GET    | `/books/statistics` | Obtener estadísticas de lectura                     |
-| GET    | `/books/:id`        | Obtener un libro por ID                             |
-| PATCH  | `/books/:id`        | Actualizar un libro                                 |
-| DELETE | `/books/:id`        | Eliminar un libro                                   |
+| Método | Endpoint            | Descripción                            |
+| ------ | ------------------- | -------------------------------------- |
+| POST   | `/books`            | Crear un nuevo libro                   |
+| GET    | `/books`            | Listar con filtros, orden y paginación |
+| GET    | `/books/statistics` | Estadísticas de lectura                |
+| GET    | `/books/:id`        | Obtener libro por ID                   |
+| PATCH  | `/books/:id`        | Actualizar libro                       |
+| DELETE | `/books/:id`        | Eliminar libro                         |
 
-### Ejemplos de uso con curl
+## Parámetros de Filtrado (GET /books)
 
-**Crear un libro:**
+| Parámetro   | Tipo   | Descripción                                               |
+| ----------- | ------ | --------------------------------------------------------- |
+| `author`    | string | Buscar por autor (parcial)                                |
+| `genre`     | string | Buscar por género (parcial)                               |
+| `status`    | enum   | `read` o `unread`                                         |
+| `minRating` | number | Calificación mínima (1-5)                                 |
+| `sortBy`    | enum   | `title`, `author`, `year`, `rating`, `pages`, `createdAt` |
+| `sortOrder` | enum   | `asc` o `desc` (default: desc)                            |
+| `page`      | number | Número de página (default: 1)                             |
+| `limit`     | number | Elementos por página (default: 10, max: 100)              |
 
-```bash
-curl -X POST http://localhost:3000/books \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "Cien años de soledad",
-    "author": "Gabriel García Márquez",
-    "year": 1967,
-    "genre": "Realismo mágico",
-    "pages": 417,
-    "read": true,
-    "rating": 5
-  }'
-```
+## Ejemplos con httpie
 
-**Obtener todos los libros:**
-
-```bash
-curl http://localhost:3000/books
-```
-
-**Filtrar por autor:**
-
-```bash
-curl "http://localhost:3000/books?author=García"
-```
-
-**Filtrar por calificación mínima:**
-
-```bash
-curl "http://localhost:3000/books?minRating=4&read=true"
-```
-
-**Obtener estadísticas:**
-
-```bash
-curl http://localhost:3000/books/statistics
-```
-
-### Ejemplos de uso con httpie
-
-> httpie es una alternativa a curl con salida más legible para terminal.
-
-**Crear un libro:**
+**Crear libro:**
 
 ```bash
 http POST http://localhost:3000/books \
   title="Cien años de soledad" \
   author="Gabriel García Márquez" \
-  year=1967 \
-  genre="Realismo mágico" \
-  pages=417 \
-  read:=true \
-  rating:=5
+  year=1967 genre="Realismo mágico" \
+  pages=417 read:=true rating:=5
 ```
 
-**Obtener todos los libros:**
+**Buscar con filtros y orden:**
 
 ```bash
-http http://localhost:3000/books
+http "http://localhost:3000/books?status=read&minRating=4&sortBy=rating&sortOrder=desc"
 ```
 
-**Filtrar por autor:**
+**Listar paginado:**
 
 ```bash
-http http://localhost:3000/books author=="García"
+http "http://localhost:3000/books?page=1&limit=20"
 ```
 
-**Filtrar por calificación mínima y leídos:**
-
-```bash
-http http://localhost:3000/books minRating==4 read==true
-```
-
-**Obtener un libro por ID:**
-
-```bash
-http http://localhost:3000/books/1
-```
-
-**Obtener estadísticas:**
+**Ver estadísticas:**
 
 ```bash
 http http://localhost:3000/books/statistics
 ```
 
-**Actualizar un libro:**
+**Actualizar libro:**
 
 ```bash
-http PATCH http://localhost:3000/books/1 \
-  rating:=4 \
-  notes="Excelente lectura"
+http PATCH http://localhost:3000/books/1 rating:=4 notes="Excelente"
 ```
 
-**Eliminar un libro:**
+**Eliminar libro:**
 
 ```bash
 http DELETE http://localhost:3000/books/1
 ```
 
-### Verificación rápida de la API
-
-Ejecuta estos comandos en orden para verificar que todo funciona:
+## Ejecución de Pruebas
 
 ```bash
-# 1. Crear libro
-http POST http://localhost:3000/books \
-  title="El Principito" \
-  author="Antoine de Saint-Exupéry" \
-  year=1943 \
-  genre="Fábula" \
-  pages=96 \
-  rating:=5
-
-# 2. Listar libros
-http http://localhost:3000/books
-
-# 3. Ver estadísticas
-http http://localhost:3000/books/statistics
-
-# 4. Verificar en Swagger
-# Abrir en navegador: http://localhost:3000/api/docs
-```
-
-## Ejecutar las Pruebas
-
-### Pruebas unitarias (servicios)
-
-```bash
+# Pruebas unitarias
 npm run test
-```
 
-### Pruebas con watching
-
-```bash
-npm run test:watch
-```
-
-### Cobertura de pruebas
-
-```bash
+# Pruebas con coverage
 npm run test:cov
-```
 
-### Pruebas e2e (integración)
-
-```bash
+# Pruebas e2e (requiere BD)
 npm run test:e2e
+
+# Pruebas en modo watch
+npm run test:watch
 ```
 
 ## Cobertura de Pruebas
 
-El proyecto incluye:
+| Componente    | Statements | Branches | Functions | Lines |
+| ------------- | ---------- | -------- | --------- | ----- |
+| books.service | 100%       | 91.17%   | 100%      | 100%  |
+| book.entity   | 100%       | 100%     | 100%      | 100%  |
+| books.module  | 100%       | 100%     | 100%      | 100%  |
 
-- **Pruebas unitarias**: Cobertura del servicio BooksService
-- **Pruebas de integración**: Cobertura del controlador BooksController
+**Total pruebas**: 33 tests passing
 
-Métricas esperadas:
+## Manejo de Errores
 
-- Cobertura de líneas: > 80%
-- Cobertura de funciones: > 80%
-- Cobertura de ramas: > 70%
+La API retorna errores estructurados:
+
+```json
+{
+  "statusCode": 404,
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "path": "/books/999",
+  "method": "GET",
+  "message": "Libro con ID 999 no encontrado",
+  "error": "Not Found"
+}
+```
+
+**Códigos de error:**
+
+- `400`: Validación fallida / datos inválidos
+- `404`: Recurso no encontrado
+- `500`: Error interno del servidor
 
 ## Estructura del Proyecto
 
@@ -310,12 +201,13 @@ gestion_libros/
 │   │   │   ├── create-book.dto.ts
 │   │   │   ├── update-book.dto.ts
 │   │   │   └── query-book.dto.ts
-│   │   ├── entities/
-│   │   │   └── book.entity.ts
+│   │   ├── entities/book.entity.ts
 │   │   ├── books.controller.ts
-│   │   ├── books.module.ts
 │   │   ├── books.service.ts
-│   │   └── books.service.spec.ts
+│   │   ├── books.service.spec.ts
+│   │   └── books.module.ts
+│   ├── common/filters/
+│   │   └── http-exception.filter.ts
 │   ├── app.module.ts
 │   └── main.ts
 ├── test/
@@ -323,34 +215,20 @@ gestion_libros/
 │   └── jest-e2e.json
 ├── docker-compose.yml
 ├── package.json
-├── tsconfig.json
 └── README.md
 ```
 
-## Validación de Datos
+## Validaciones Implementadas
 
-Los DTOs implementan las siguientes validaciones:
+### CreateBookDto / UpdateBookDto
 
-### CreateBookDto
-
-- `title`: Requerido, string, 1-255 caracteres
-- `author`: Requerido, string, 1-255 caracteres
-- `year`: Opcional, entero entre 1000-2030
-- `genre`: Opcional, string máximo 100 caracteres
-- `pages`: Opcional, entero mínimo 1
-- `read`: Opcional, boolean (default: false)
-- `rating`: Opcional, entero entre 1-5
-- `notes`: Opcional, string
-- `readDate`: Opcional, formato fecha ISO
-
-### QueryBookDto
-
-- `author`: Filtrar por autor (búsqueda parcial)
-- `genre`: Filtrar por género (búsqueda parcial)
-- `read`: Filtrar por estado de lectura
-- `minRating`: Filtrar por calificación mínima
-- `page`: Número de página (default: 1)
-- `limit`: Elementos por página (default: 10, max: 100)
+- `title`: Requerido, 1-255 caracteres
+- `author`: Requerido, 1-255 caracteres
+- `year`: Entero 1000-2030
+- `genre`: Máximo 100 caracteres
+- `pages`: Entero mínimo 1
+- `rating`: Entero 1-5
+- `readDate`: Formato ISO (YYYY-MM-DD)
 
 ## Licencia
 
