@@ -1,31 +1,45 @@
-import { IsOptional, IsInt, Min, Max, IsBoolean } from 'class-validator';
+import { IsOptional, IsInt, Min, Max, IsEnum } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+
+export enum SortOrder {
+  ASC = 'asc',
+  DESC = 'desc',
+}
+
+export enum ReadStatus {
+  READ = 'read',
+  UNREAD = 'unread',
+}
 
 export class QueryBookDto {
   @ApiPropertyOptional({
-    description: 'Filtrar por autor',
-    example: 'Gabriel García Márquez',
+    description: 'Filtrar por autor (búsqueda parcial)',
+    example: 'García',
   })
   @IsOptional()
+  @Transform(({ value }) => value?.trim())
   author?: string;
 
   @ApiPropertyOptional({
-    description: 'Filtrar por género',
-    example: 'Realismo mágico',
+    description: 'Filtrar por género (búsqueda parcial)',
+    example: 'Realismo',
   })
   @IsOptional()
+  @Transform(({ value }) => value?.trim())
   genre?: string;
 
   @ApiPropertyOptional({
-    description: 'Filtrar por si fue leído',
-    example: true,
+    description: 'Filtrar por estado de lectura',
+    enum: ReadStatus,
+    example: 'read',
   })
   @IsOptional()
-  @IsBoolean()
-  read?: boolean;
+  @IsEnum(ReadStatus)
+  status?: ReadStatus;
 
   @ApiPropertyOptional({
-    description: 'Filtrar por calificación mínima',
+    description: 'Filtrar por calificación mínima (1-5)',
     example: 4,
     minimum: 1,
     maximum: 5,
@@ -37,7 +51,25 @@ export class QueryBookDto {
   minRating?: number;
 
   @ApiPropertyOptional({
-    description: 'Número de página para paginación',
+    description: 'Campo por el cual ordenar',
+    example: 'title',
+    enum: ['title', 'author', 'year', 'rating', 'pages', 'createdAt'],
+  })
+  @IsOptional()
+  @Transform(({ value }) => value?.trim().toLowerCase())
+  sortBy?: string;
+
+  @ApiPropertyOptional({
+    description: 'Orden de ordenamiento',
+    enum: SortOrder,
+    example: 'asc',
+  })
+  @IsOptional()
+  @IsEnum(SortOrder)
+  sortOrder?: SortOrder = SortOrder.DESC;
+
+  @ApiPropertyOptional({
+    description: 'Número de página',
     example: 1,
     minimum: 1,
   })
@@ -47,7 +79,7 @@ export class QueryBookDto {
   page?: number = 1;
 
   @ApiPropertyOptional({
-    description: 'Cantidad de elementos por página',
+    description: 'Elementos por página (máximo 100)',
     example: 10,
     minimum: 1,
     maximum: 100,
