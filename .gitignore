@@ -11,7 +11,7 @@ coverage/
 # Environment variables (local secrets)
 .env
 .env.local
-.env.*.local
+!.env.example
 
 # IDE
 .idea/
@@ -50,4 +50,3 @@ npm-debug.log*
 
 # Misc
 *.local
-.env.example
