@@ -6,7 +6,14 @@ API REST profesional para el seguimiento de libros leídos desarrollada con Nest
 
 **Universidad Autónoma Tomás Frías**  
 Carrera: Ingeniería Informática  
-Potosí, Bolivia - 2026
+Potosí, Bolivia - 2025
+
+## Prácticas
+
+| Práctica   | Descripción                  | Documentación                          |
+| ---------- | ---------------------------- | -------------------------------------- |
+| Práctica 1 | API REST + Pruebas Unitarias | README.md                              |
+| Práctica 2 | Pruebas E2E con Supertest    | [docs/PRACTICA2.md](docs/PRACTICA2.md) |
 
 ## Características Principales
 
@@ -18,7 +25,7 @@ Potosí, Bolivia - 2026
 - **Documentación Swagger** con ejemplos completos
 - **Filtro global de excepciones** para respuestas consistentes
 - **Pruebas unitarias** con cobertura >80% en servicio
-- **Pruebas e2e** para integración completa
+- **Pruebas E2E** para integración completa (15 casos)
 
 ## Tecnologías
 

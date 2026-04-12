@@ -11,7 +11,11 @@ coverage/
 # Environment variables (local secrets)
 .env
 .env.local
+.env.test
 !.env.example
+
+# Documentation
+docs/
 
 # IDE
 .idea/

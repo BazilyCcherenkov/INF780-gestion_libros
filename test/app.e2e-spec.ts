@@ -1,30 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as request from 'supertest';
+import { getRepositoryToken } from '@nestjs/typeorm';
 import { AppModule } from './../src/app.module';
+import { Book } from './../src/books/entities/book.entity';
 
-describe('BooksController (e2e)', () => {
+describe('BooksController E2E Tests (Practica 2)', () => {
   let app: INestApplication;
-
-  beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        forbidNonWhitelisted: true,
-        transform: true,
-      }),
-    );
-    await app.init();
-  });
-
-  afterAll(async () => {
-    await app.close();
-  });
+  let bookRepository: any;
 
   const validBook = {
     title: 'Cien años de soledad',
@@ -38,187 +21,233 @@ describe('BooksController (e2e)', () => {
     readDate: '2024-01-15',
   };
 
-  let createdBookId: number;
+  beforeAll(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
 
-  describe('/books (POST)', () => {
-    it('should create a new book', () => {
-      return request(app.getHttpServer())
+    app = moduleFixture.createNestApplication();
+    app.useGlobalPipes(
+      new ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+        transformOptions: {
+          enableImplicitConversion: true,
+        },
+      }),
+    );
+    await app.init();
+
+    bookRepository = moduleFixture.get(getRepositoryToken(Book));
+    await bookRepository.clear();
+  });
+
+  afterAll(async () => {
+    await bookRepository.clear();
+    await app.close();
+  });
+
+  afterEach(async () => {
+    await bookRepository.clear();
+  });
+
+  describe('POST /books - Crear libro', () => {
+    it('Caso 1: Crear libro con datos válidos → 201', async () => {
+      const response = await request(app.getHttpServer())
         .post('/books')
         .send(validBook)
-        .expect(201)
-        .expect((res) => {
-          expect(res.body.title).toBe(validBook.title);
-          expect(res.body.author).toBe(validBook.author);
-          expect(res.body.year).toBe(validBook.year);
-          createdBookId = res.body.id;
-        });
+        .expect(201);
+
+      expect(response.body).toHaveProperty('id');
+      expect(response.body.title).toBe(validBook.title);
+      expect(response.body.author).toBe(validBook.author);
+      expect(response.body.year).toBe(validBook.year);
     });
 
-    it('should reject book without title', () => {
-      return request(app.getHttpServer())
+    it('Caso 2: Crear libro sin título (campo obligatorio) → 400', async () => {
+      await request(app.getHttpServer())
         .post('/books')
         .send({ author: 'Test Author' })
         .expect(400);
     });
 
-    it('should reject book without author', () => {
-      return request(app.getHttpServer())
+    it('Caso 3: Crear libro sin autor (campo obligatorio) → 400', async () => {
+      await request(app.getHttpServer())
         .post('/books')
         .send({ title: 'Test Title' })
         .expect(400);
     });
 
-    it('should reject book with invalid rating', () => {
-      return request(app.getHttpServer())
+    it('Caso 4: Crear libro con número de páginas negativo → 400', async () => {
+      await request(app.getHttpServer())
         .post('/books')
-        .send({ ...validBook, rating: 6 })
+        .send({ ...validBook, pages: -10 })
         .expect(400);
-    });
-
-    it('should reject book with invalid year', () => {
-      return request(app.getHttpServer())
-        .post('/books')
-        .send({ ...validBook, year: 3000 })
-        .expect(400);
-    });
-
-    it('should create book with only required fields', () => {
-      return request(app.getHttpServer())
-        .post('/books')
-        .send({ title: 'Test Book', author: 'Test Author' })
-        .expect(201);
     });
   });
 
-  describe('/books (GET)', () => {
-    it('should return paginated books', () => {
-      return request(app.getHttpServer())
+  describe('GET /books - Listar libros', () => {
+    it('Caso 5: Listar todos los libros cuando existen registros → 200', async () => {
+      await request(app.getHttpServer()).post('/books').send(validBook);
+
+      const response = await request(app.getHttpServer())
         .get('/books')
-        .expect(200)
-        .expect((res) => {
-          expect(res.body).toHaveProperty('data');
-          expect(res.body).toHaveProperty('total');
-          expect(res.body).toHaveProperty('page');
-          expect(res.body).toHaveProperty('limit');
-          expect(Array.isArray(res.body.data)).toBe(true);
-        });
-    });
-
-    it('should filter books by author', () => {
-      return request(app.getHttpServer())
-        .get('/books?author=García')
-        .expect(200)
-        .expect((res) => {
-          expect(Array.isArray(res.body.data)).toBe(true);
-        });
-    });
-
-    it('should filter books by genre', () => {
-      return request(app.getHttpServer())
-        .get('/books?genre=Realismo')
         .expect(200);
+
+      expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.total).toBeGreaterThan(0);
     });
 
-    it('should filter books by read status', () => {
-      return request(app.getHttpServer())
-        .get('/books?read=true')
+    it('Caso 6: Listar libros cuando no hay registros → 200 (array vacío)', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/books')
         .expect(200);
-    });
 
-    it('should filter books by minimum rating', () => {
-      return request(app.getHttpServer())
-        .get('/books?minRating=4')
-        .expect(200);
-    });
-
-    it('should paginate results', () => {
-      return request(app.getHttpServer())
-        .get('/books?page=1&limit=5')
-        .expect(200)
-        .expect((res) => {
-          expect(res.body.page).toBe(1);
-          expect(res.body.limit).toBe(5);
-        });
+      expect(response.body.data).toHaveLength(0);
+      expect(response.body.total).toBe(0);
     });
   });
 
-  describe('/books/statistics (GET)', () => {
-    it('should return book statistics', () => {
-      return request(app.getHttpServer())
-        .get('/books/statistics')
-        .expect(200)
-        .expect((res) => {
-          expect(res.body).toHaveProperty('totalBooks');
-          expect(res.body).toHaveProperty('booksRead');
-          expect(res.body).toHaveProperty('booksUnread');
-          expect(res.body).toHaveProperty('averageRating');
-          expect(res.body).toHaveProperty('totalPages');
-        });
+  describe('GET /books/:id - Obtener libro por ID', () => {
+    let bookId: number;
+
+    beforeEach(async () => {
+      const response = await request(app.getHttpServer())
+        .post('/books')
+        .send(validBook);
+      bookId = response.body.id;
+    });
+
+    it('Caso 7: Obtener libro existente por ID → 200', async () => {
+      const response = await request(app.getHttpServer())
+        .get(`/books/${bookId}`)
+        .expect(200);
+
+      expect(response.body.id).toBe(bookId);
+      expect(response.body.title).toBe(validBook.title);
+    });
+
+    it('Caso 8: Obtener libro con ID inexistente → 404', async () => {
+      await request(app.getHttpServer()).get('/books/99999').expect(404);
+    });
+
+    it('Caso 9: Obtener libro con ID inválido (formato incorrecto) → 400', async () => {
+      await request(app.getHttpServer()).get('/books/abc').expect(400);
     });
   });
 
-  describe('/books/:id (GET)', () => {
-    it('should return a book by id', () => {
-      return request(app.getHttpServer())
-        .get(`/books/${createdBookId}`)
-        .expect(200)
-        .expect((res) => {
-          expect(res.body.id).toBe(createdBookId);
-          expect(res.body.title).toBe(validBook.title);
-        });
+  describe('PATCH /books/:id - Actualizar libro', () => {
+    let bookId: number;
+
+    beforeEach(async () => {
+      const response = await request(app.getHttpServer())
+        .post('/books')
+        .send(validBook);
+      bookId = response.body.id;
     });
 
-    it('should return 404 for non-existent book', () => {
-      return request(app.getHttpServer())
-        .get('/books/99999')
-        .expect(404);
-    });
-  });
+    it('Caso 10: Actualizar título de un libro existente → 200', async () => {
+      const response = await request(app.getHttpServer())
+        .patch(`/books/${bookId}`)
+        .send({ title: 'Nuevo Título' })
+        .expect(200);
 
-  describe('/books/:id (PATCH)', () => {
-    it('should update a book', () => {
-      return request(app.getHttpServer())
-        .patch(`/books/${createdBookId}`)
-        .send({ title: 'Nuevo título', rating: 4 })
-        .expect(200)
-        .expect((res) => {
-          expect(res.body.title).toBe('Nuevo título');
-          expect(res.body.rating).toBe(4);
-        });
+      expect(response.body.title).toBe('Nuevo Título');
     });
 
-    it('should return 404 when updating non-existent book', () => {
-      return request(app.getHttpServer())
+    it('Caso 11: Actualizar libro con ID inexistente → 404', async () => {
+      await request(app.getHttpServer())
         .patch('/books/99999')
         .send({ title: 'Test' })
         .expect(404);
     });
 
-    it('should reject update with invalid data', () => {
-      return request(app.getHttpServer())
-        .patch(`/books/${createdBookId}`)
-        .send({ rating: 10 })
+    it('Caso 12: Actualizar con datos inválidos (páginas negativas) → 400', async () => {
+      await request(app.getHttpServer())
+        .patch(`/books/${bookId}`)
+        .send({ pages: -50 })
         .expect(400);
     });
   });
 
-  describe('/books/:id (DELETE)', () => {
-    it('should delete a book', () => {
-      return request(app.getHttpServer())
-        .delete(`/books/${createdBookId}`)
-        .expect(204);
+  describe('DELETE /books/:id - Eliminar libro', () => {
+    let bookId: number;
+
+    beforeEach(async () => {
+      const response = await request(app.getHttpServer())
+        .post('/books')
+        .send(validBook);
+      bookId = response.body.id;
     });
 
-    it('should return 404 when deleting non-existent book', () => {
-      return request(app.getHttpServer())
-        .delete('/books/99999')
-        .expect(404);
+    it('Caso 13: Eliminar libro existente → 204', async () => {
+      await request(app.getHttpServer()).delete(`/books/${bookId}`).expect(204);
+
+      await request(app.getHttpServer()).get(`/books/${bookId}`).expect(404);
     });
 
-    it('should verify book was deleted', () => {
-      return request(app.getHttpServer())
-        .get(`/books/${createdBookId}`)
-        .expect(404);
+    it('Caso 14: Eliminar libro con ID inexistente → 404', async () => {
+      await request(app.getHttpServer()).delete('/books/99999').expect(404);
+    });
+  });
+
+  describe('Caso 15: Flujo completo CRUD', () => {
+    it('Crear → Leer → Actualizar → Verificar cambio → Eliminar → Verificar 404', async () => {
+      const createResponse = await request(app.getHttpServer())
+        .post('/books')
+        .send({
+          title: 'El Gran Gatsby',
+          author: 'F. Scott Fitzgerald',
+          year: 1925,
+          pages: 180,
+        })
+        .expect(201);
+
+      const bookId = createResponse.body.id;
+
+      const readResponse = await request(app.getHttpServer())
+        .get(`/books/${bookId}`)
+        .expect(200);
+      expect(readResponse.body.author).toBe('F. Scott Fitzgerald');
+
+      const updateResponse = await request(app.getHttpServer())
+        .patch(`/books/${bookId}`)
+        .send({ read: true, rating: 5 })
+        .expect(200);
+      expect(updateResponse.body.read).toBe(true);
+      expect(updateResponse.body.rating).toBe(5);
+
+      const verifyUpdate = await request(app.getHttpServer())
+        .get(`/books/${bookId}`)
+        .expect(200);
+      expect(verifyUpdate.body.rating).toBe(5);
+
+      await request(app.getHttpServer()).delete(`/books/${bookId}`).expect(204);
+
+      await request(app.getHttpServer()).get(`/books/${bookId}`).expect(404);
+    });
+  });
+
+  describe('GET /books/statistics - Estadísticas', () => {
+    it('Obtener estadísticas con datos → 200', async () => {
+      await request(app.getHttpServer()).post('/books').send(validBook);
+
+      const response = await request(app.getHttpServer())
+        .get('/books/statistics')
+        .expect(200);
+
+      expect(response.body.totalBooks).toBeGreaterThan(0);
+      expect(response.body).toHaveProperty('averageRating');
+      expect(response.body).toHaveProperty('topRatedBooks');
+    });
+
+    it('Obtener estadísticas sin datos → 200', async () => {
+      const response = await request(app.getHttpServer())
+        .get('/books/statistics')
+        .expect(200);
+
+      expect(response.body.totalBooks).toBe(0);
     });
   });
 });
